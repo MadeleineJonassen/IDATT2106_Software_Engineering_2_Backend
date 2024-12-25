@@ -1,0 +1,15 @@
+version: '3.3'
+
+services:
+  db:
+    image: mysql:8.3
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'db-dev'
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'changemeinprod'
+      MYSQL_ROOT_PASSWORD: 'changemeinprodroot'
+    ports:
+      - '3306:3306'
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql

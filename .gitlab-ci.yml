@@ -1,0 +1,62 @@
+image: maven:eclipse-temurin
+
+variables:
+    MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+    MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
+    SPRING_PROFILES_ACTIVE: gitlab-ci
+
+stages:
+    - format
+    - test
+    - javadoc
+    - package
+
+cache:
+  paths:
+    - .m2/repository
+  key: "$CI_BUILD_REF_NAME"
+
+test-jdk21:
+    stage: test
+    script:
+        - mvn clean test
+    artifacts:
+      when: always
+      paths:
+          - target/site/jacoco
+    when: always
+
+docs:
+  stage: javadoc
+  script:
+    - mvn javadoc:javadoc
+  artifacts:
+    when: always
+    paths:
+      - target/site/apidocs
+  when: always
+
+package-jdk21:
+  stage: package
+  script:
+    - mvn $MAVEN_CLI_OPTS clean package -DskipTests
+  artifacts:
+    paths:
+      - target/*.jar
+
+format-code:
+  stage: format
+  script:
+    - mvn clean googleformatter:format
+
+pages:
+  image: alpine:latest
+  stage: package
+  script:
+    - mv target/site/jacoco public
+    - mv target/site/apidocs public
+  artifacts:
+    paths:
+      - public
+  only:
+    - main
